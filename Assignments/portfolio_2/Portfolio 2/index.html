@@ -1,0 +1,303 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Instant Messenger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font: 13px Helvetica, Arial;
+        }
+
+        .messageForm {
+            background: #cccccc;
+            padding: 1px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .messageInput {
+            border: 0;
+            padding: 10px;
+            width: 100%;
+        }
+        /*CSS taken from https://codepen.io/2ne/pen/osvpj?editors=1100
+          Modified to suit portfolio
+        */
+
+        .message {
+            border-radius: 20px 20px 20px 20px;
+            margin: 0 15px 10px;
+            padding: 15px 20px;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .message.to {
+            background-color: #2095FE;
+            color: #fff;
+            margin-left: 80px;
+        }
+
+        .message.from {
+            background-color: #E5E4E9;
+            color: #363636;
+            margin-right: 80px;
+        }
+
+        .message.to+.message.to,
+        .message.from+.message.from {
+            margin-top: -7px;
+        }
+
+        .message:before {
+            border-color: #2095FE;
+            border-radius: 50% 50% 50% 50%;
+            border-style: solid;
+            border-width: 0 20px;
+            bottom: 0;
+            clip: rect(20px, 35px, 42px, 0px);
+            content: " ";
+            height: 40px;
+            position: absolute;
+            right: -50px;
+            width: 30px;
+            z-index: -1;
+        }
+
+        .message.from:before {
+            border-color: #E5E4E9;
+            left: -50px;
+            transform: rotateY(180deg);
+        }
+    </style>
+
+    <style>
+        .overlay {
+            z-index: 10000;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+        }
+        /*
+        * Login Form CSS taken from: http://codepen.io/colorlib/pen/rxddKy
+        * Modified
+        */
+
+        .overlayForm {
+            position: absolute;
+            ;
+            background: #FFFFFF;
+            max-width: 360px;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+            height: 250px;
+            padding: 45px;
+            text-align: center;
+            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+        }
+
+        .overlayInput {
+            font-family: "Roboto", sans-serif;
+            outline: 0;
+            background: #f2f2f2;
+            width: 100%;
+            border: 0;
+            margin: 0 0 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .overlayButton {
+            font-family: "Roboto", sans-serif;
+            text-transform: uppercase;
+            outline: 0;
+            background: #4CAF50;
+            width: 100%;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border: 0;
+            padding: 15px;
+            color: #FFFFFF;
+            font-size: 14px;
+            -webkit-transition: all 0.3 ease;
+            transition: all 0.3 ease;
+            cursor: pointer;
+        }
+
+        .overlayButton:hover,
+        .matelook_login_button:active,
+        .matelook_login_button:focus {
+            background: #43A047;
+        }
+    </style>
+</head>
+
+<body>
+
+    <style>
+        .heading {
+            position: fixed;
+            width: 100%;
+            font-family: "Roboto", sans-serif;
+            padding-bottom: 10px;
+            padding-top: 10px;
+            border-width: 1px;
+            border-bottom-width: 100%;
+            border-bottom-color: #cccccc;
+            border-bottom-style: solid;
+            background: white;
+            z-index: 10;
+            font-weight: normal;
+            text-shadow: 2px 2px 0 #000, margin: 10px 0 24px;
+        }
+    </style>
+
+    <div class="ui sidebar inverted vertical menu">
+        <a class="item" id="cuButton">
+      Change Username
+    </a>
+    </div>
+    <div class="pusher">
+
+        <h1 class="heading">
+
+          <span style="padding-left:15px;" id="SBTest">
+              <i class="sidebar icon"></i>
+          </span>
+
+          <span style="float: right; width: 90%; text-align: center; margin-right: 70px;" >INSTANT MESSENGER</span>
+      </h1>
+        <div class="overlay" id="overlay">
+
+        </div>
+        <div>
+            <div id="messages" style="padding-bottom:30px;padding-top:60px"></div>
+            <form action="" class="messageForm" id="messageForm">
+                <input class="messageInput" id="m" autocomplete="off" placeholder="Enter message..." />
+            </form>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.11.8/semantic.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.11.8/semantic.min.js"></script>
+    <script>
+        $(function() {
+            var socket = io();
+            $('#messageForm').submit(function() {
+                if ($('#m').val() == "") {
+                    return false;
+                }
+                var message = "<b>" + sessionStorage.getItem('username') + "</b>: " + $('#m').val();
+                socket.emit('chat message', message);
+                $('#m').val('');
+                return false;
+            });
+            socket.on('chat message', function(msg) {
+
+                var reg = sessionStorage.getItem('username');
+                reg = "<b>" + reg;
+                var myRegex = /^<p style="text-align:center;padding-bottom:15px"><i><b>([\w\d]+)<\/b> has joined!<\/i><\/p>$/;
+                var match = myRegex.exec(msg);
+                if (/^<p style="text-align:center;padding-bottom:15px"><i><b>[\w\d]+<\/b> has joined!<\/i><\/p>$/.test(msg)) {
+                    if (match[1] == sessionStorage.getItem('username')) {
+                        msg = `<p style="text-align:center;padding-bottom:15px"><i>You have joined as <b>` + sessionStorage.getItem('username') + `</b>!</i></p>`;
+                    } else {;
+                    }
+                } else if (/^<p style="text-align:center;padding-bottom:15px"><i><b>([\w\d]+)<\/b> has disconnected!<\/i><\/p>$/.test(msg)) {;
+                } else if (/^<p style="text-align:center;padding-bottom:15px"><i><b>[\w\d]+<\/b> has changed their username to <b>[\w\d]+<\/b>!<\/i><\/p>$/.test(msg)) {;
+                } else if (msg.startsWith(reg)) {
+                    msg = msg.replace(reg + '</b>: ', '');
+                    msg = `<div class="message to">` + msg + `</div`;
+                    console.log("check: " + msg);
+                } else {
+                    msg = `<div class="message from">` + msg + `</div`;
+                }
+                $('#messages').append(msg);
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+        });
+    </script>
+    <script>
+        var overlay = "";
+        overlay =
+            `<form class="overlayForm">
+        <input type="text" class="overlayInput" name="username" id="username" autofocus="autofocus" placeholder="Enter username..." />
+        <input type="submit" class="overlayButton" value="Submit" id="submitUser" />
+    </form>`;
+        document.getElementById('overlay').innerHTML = overlay;
+
+        $(document).ready(function() {
+            $("div:not(#overlay)").css({
+                "pointer-events": "none"
+            });
+            var socket = io();
+            $("#submitUser").click(function() {
+                $("div:not(#overlay)").css({
+                    "pointer-events": ""
+                });
+                var username = document.getElementById('username').value;
+                if (username.length == 0) {
+                    username = "guest" + Math.floor((Math.random() * 9999) + 1000);
+                }
+                if (sessionStorage.getItem('username') == null) {
+                    sessionStorage.setItem('username', username);
+                    $('#overlay').hide();
+                    $('#m').focus();
+                    var cast = `<p style="text-align:center;padding-bottom:15px"><i><b>` + username + `</b> has joined!</i></p>`;
+                    socket.emit('chat message', cast);
+                    return false;
+                } else {
+                    var old = sessionStorage.getItem('username');
+                    sessionStorage.setItem('username', username);
+                    $('#overlay').hide();
+                    $('#m').focus();
+                    var cast = `<p style="text-align:center;padding-bottom:15px"><i><b>` + old + `</b> has changed their username to <b>` + username + `</b>!</i></p>`;
+                    socket.emit('chat message', cast);
+                    return false;
+                }
+
+            });
+        });
+    </script>
+    <script>
+        var socket = io();
+        window.onbeforeunload = function(event) {
+            console.log('closing');
+            username = sessionStorage.getItem('username');
+            var cast = `<p style="text-align:center;padding-bottom:15px"><i><b>` + username + `</b> has disconnected!</i></p>`;
+            socket.emit('chat message', cast);
+            sessionStorage.clear();
+            return false;
+        };
+    </script>
+    <script>
+        $("#SBTest").click(function() {
+            $('.ui.sidebar').sidebar('toggle');
+        });
+        $("#cuButton").click(function() {
+            $('#overlay').show();
+        });
+    </script>
+</body>
+
+</html>
